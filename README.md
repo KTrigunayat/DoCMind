@@ -1,60 +1,105 @@
-# 20 Newsgroups Dataset Processing Pipeline
+# DocMind: PDF Parser & Text Classification Pipeline
 
-This project provides a simple, two-step pipeline to download, process, and clean the **20 Newsgroups dataset**. The primary goal is to re-categorize the 20 fine-grained newsgroup labels into 6 broader subject categories, making the dataset suitable for more general text classification tasks.
+This project contains two primary components:
+1.  A **PDF Parsing API** built with FastAPI to extract text from uploaded PDF files.
+2.  A **Data Processing Pipeline** to download and transform the 20 Newsgroups dataset for multi-label text classification.
 
 ## File Structure
 
-The complete project structure, after running all scripts, will look like this:
-
 ```
 .
-├── 20_newsgroups_csv/         # Directory for cleaned and processed data after downloaded from Hugging Face
+├── 20_newsgroups_csv_export/   # Raw data from Hugging Face
 │   ├── train.csv
 │   └── test.csv
-└── README.md                  # This documentation
+├── 20_newsgroups_processed/    # Final, processed data
+│   ├── train.csv
+│   └── test.csv
+├── main.py                     # FastAPI application for PDF parsing
+├── Dataset.py                  # Script to download the raw dataset
+├── Change_labels.py            # Script to process and remap labels
+└── README.md                   # This documentation
 ```
 
-## 1. 20 Newsgroups Dataset Processing
+---
+
+## 1. PDF Parsing API
+
+The `main.py` script launches a web server with an endpoint for parsing PDF files.
+
+### Dependencies
+
+- fastapi
+- uvicorn
+- python-multipart
+- PyMuPDF
+
+Install them using pip:
+```bash
+pip install fastapi uvicorn python-multipart PyMuPDF
+```
+
+### How to Run
+
+1.  Navigate to the project directory in your terminal.
+2.  Run the application using `uvicorn`:
+
+    ```bash
+    uvicorn main:app --reload
+    ```
+
+3.  The API will be live at `http://127.0.0.1:8000`.
+
+### API Endpoint
+
+- **POST** `/parse-upload/`
+  - **Purpose**: Upload a PDF file to extract its text content.
+  - **Request**: `multipart/form-data` with a `file` field containing the PDF.
+  - **Response**: A JSON object with the filename, content type, and the extracted text.
+
+---
+
+## 2. 20 Newsgroups Data Pipeline
+
+This two-step pipeline downloads the 20 Newsgroups dataset and processes it for a multi-label classification task.
+
+### Dependencies
+
+- pandas
+- datasets
+
+Install them using pip:
+```bash
+pip install pandas datasets
+```
+
+### Step 1: Download the Dataset
+
+Run the `Dataset.py` script to download the raw data from Hugging Face and save it locally.
 
 ```bash
 python Dataset.py
 ```
-After this step is complete, you will have the `20_newsgroups_csv/` folder containing the raw `train.csv` and `test.csv` files.
 
-### Step 2: Clean and Remap the Labels
+This will create the `20_newsgroups_csv_export/` directory containing the raw `train.csv` and `test.csv` files.
 
-Next, run the `Change_labels.py` script. This script reads the raw CSV files, performs the label modifications, and saves the cleaned data into a new directory.
+### Step 2: Process and Remap Labels
+
+Run the `Change_labels.py` script to clean the data and create two new label columns for multi-label classification.
 
 ```bash
 python Change_labels.py
 ```
-This script will create the `20_newsgroups_modified_csv/` directory containing the final, processed versions of `train.csv` and `test.csv`.
 
-## Script Descriptions
+This script performs the following actions:
+- Reads the raw data from `20_newsgroups_csv_export/`.
+- Creates a `subject_label` based on the original 20 newsgroups.
+- Creates a `category_label` (e.g., `Technical Report`, `Opinion Piece`) based on the original labels.
+- Removes the old labels.
+- Saves the final, processed data to the `20_newsgroups_processed/` directory.
 
-### `Dataset.py`
-- **Purpose**: To acquire the initial data.
-- **Actions**:
-  1. Downloads the `SetFit/20_newsgroups` dataset using the `datasets` library.
-  2. Saves each split (`train` and `test`) as a separate CSV file.
-  3. Places the output files in the `./20_newsgroups_csv/` directory.
+### Final Output
 
-### `Change_labels.py`
-- **Purpose**: To clean and transform the raw data for analysis.
-- **Actions**:
-  1. Loads the `train.csv` and `test.csv` files from the `20_newsgroups_csv/` directory.
-  2. **Remaps Labels**: Converts the 20 specific newsgroup labels into 6 broader categories:
-     - `Computer Technology`
-     - `Science`
-     - `Politics`
-     - `Religion`
-     - `Recreation & Sport`
-     - `Miscellaneous`
-  3. **Cleans Columns**: Removes the original numeric `label` column, keeping only the `text` and the new `label_text` columns.
-  4. Saves the modified `train` and `test` datasets as new CSV files in the `./20_newsgroups_modified_csv/` directory.
-
-## Final Output
-
-The final, analysis-ready data is located in the `20_newsgroups_modified_csv/` directory. These CSV files contain two columns:
-- `text`: The full text content of the newsgroup post.
-- `label_text`: The new, broader category label for the post.
+The processed CSV files in `20_newsgroups_processed/` contain three columns:
+- `text`: The original post content.
+- `subject_label`: The general subject of the post.
+- `category_label`: The synthetic category of the post.
