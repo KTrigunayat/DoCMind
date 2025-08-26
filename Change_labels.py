@@ -1,27 +1,28 @@
 import os
-import random
+import pandas as pd
 from datasets import load_dataset
 
-print("--- Starting Change_labels.py Script ---")
+print("--- Starting Multi-Label Preparation Script ---")
 
-# --- Step 1: Define the path to your INPUT CSV files ---
-input_csv_directory = "20_newsgroups_csv_export" #<-- UPDATE if your folder is named differently
+# --- Step 1: Define paths ---
+input_csv_directory = "20_newsgroups_csv_export"
 train_file = os.path.join(input_csv_directory, "train.csv")
 test_file = os.path.join(input_csv_directory, "test.csv")
 
 print(f"Attempting to load data from: '{input_csv_directory}'")
 
-# --- Step 2: Load the dataset from the local CSV files ---
+# --- Step 2: Load the dataset from local CSVs ---
 try:
     ds = load_dataset("csv", data_files={"train": train_file, "test": test_file})
     print("✅ Successfully loaded dataset from local CSVs.")
 except FileNotFoundError:
     print(f"\n❌ ERROR: Input files not found in '{input_csv_directory}'.")
-    print("Please ensure the folder name in the script matches your actual folder name.")
     exit()
 
-# --- Step 3: Define the mapping to broader categories ---
-label_mapping = {
+# --- Step 3: Define Mappings for BOTH tasks ---
+
+# Mapping for Subject (Head 1)
+subject_label_mapping = {
     'comp.graphics': 'Computer Technology', 'comp.os.ms-windows.misc': 'Computer Technology',
     'comp.sys.ibm.pc.hardware': 'Computer Technology', 'comp.sys.mac.hardware': 'Computer Technology',
     'comp.windows.x': 'Computer Technology', 'rec.autos': 'Recreation & Sport',
@@ -34,45 +35,52 @@ label_mapping = {
     'alt.atheism': 'Religion'
 }
 
-# --- Step 4: Apply the mapping function ---
-def remap_labels(examples):
-    new_labels = [label_mapping.get(label, 'Miscellaneous') for label in examples['label_text']]
-    examples['label_text'] = new_labels
+# NEW: Function to get synthetic category (Head 2)
+def get_synthetic_category(original_label):
+    if original_label.startswith('sci.') or original_label.startswith('comp.'):
+        return 'Technical Report'
+    elif original_label.startswith('talk.'):
+        return 'Opinion Piece'
+    elif original_label.startswith('rec.') or original_label.startswith('alt.'):
+        return 'Forum Post'
+    else:
+        return 'Article'
+
+# --- Step 4: Apply a combined mapping function ---
+def apply_all_mappings(examples):
+    original_labels = examples['label_text']
+    
+    # Create Subject labels
+    subject_labels = [subject_label_mapping.get(label, 'Miscellaneous') for label in original_labels]
+    
+    # Create Category labels
+    category_labels = [get_synthetic_category(label) for label in original_labels]
+    
+    # Add the new columns to the dataset
+    examples['subject_label'] = subject_labels
+    examples['category_label'] = category_labels
     return examples
 
-print("Remapping labels...")
-modified_ds = ds.map(remap_labels, batched=True)
+print("Applying multi-task mappings...")
+modified_ds = ds.map(apply_all_mappings, batched=True)
 
-# --- Step 5: Remove the 'label' column ---
-print("Removing old 'label' column...")
-final_ds = modified_ds.remove_columns("label")
+# --- Step 5: Remove the original label columns ---
+print("Removing original label columns...")
+final_ds = modified_ds.remove_columns(["label", "label_text"])
 
-print("\nTransformation complete. Final dataset structure:")
+print("\nTransformation complete. Final multi-task dataset structure:")
 print(final_ds)
 
 
-# --- Step 6: SAVE THE MODIFIED DATASET ---
+# --- Step 6: Save the final dataset ---
 print("\n--- Saving the processed data ---")
-
-# --- CHOOSE ONE SAVING METHOD BELOW ---
-
-# Option 1: Save as new CSV files (Recommended for you)
-# This will create a new folder and save train.csv and test.csv inside it.
-output_csv_directory = "20_newsgroups_csv_export"
-os.makedirs(output_csv_directory, exist_ok=True) # Create folder if it doesn't exist
+output_csv_directory = "20_newsgroups_processed" # Saving to a NEW folder is safer
+os.makedirs(output_csv_directory, exist_ok=True)
 
 for split, dataset in final_ds.items():
     output_path = os.path.join(output_csv_directory, f"{split}.csv")
-    dataset.to_csv(output_path)
+    dataset.to_csv(output_path, index=False)
     print(f"Saved '{split}' split to '{output_path}'")
 
-print(f"\n✅ Successfully saved modified dataset to '{output_csv_directory}' folder.")
-
-
-# # Option 2: Save in native Arrow format (Faster for re-loading in 'datasets')
-# # Uncomment the lines below and comment out Option 1 if you prefer this.
-# output_arrow_directory = "20_newsgroups_modified_arrow"
-# final_ds.save_to_disk(output_arrow_directory)
-# print(f"\n✅ Successfully saved modified dataset to '{output_arrow_directory}' folder.")
-
+print(f"\n✅ Successfully saved final multi-task dataset to '{output_csv_directory}' folder.")
 print("\n--- Script Finished ---")

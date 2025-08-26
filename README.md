@@ -11,29 +11,10 @@ The complete project structure, after running all scripts, will look like this:
 ├── 20_newsgroups_csv/         # Directory for cleaned and processed data after downloaded from Hugging Face
 │   ├── train.csv
 │   └── test.csv
-├── Dataset.py                 # Script 1: Downloads the raw data
-├── Change_labels.py           # Script 2: Processes the raw data
-└── README.md                  # This documentation file
+└── README.md                  # This documentation
 ```
 
-## Prerequisites
-
-Before running the scripts, you need to have Python 3.7+ installed, along with the `datasets` library from Hugging Face.
-
-You can install the required library using pip:
-```bash
-pip install datasets
-```
-
-## Workflow / How to Use
-
-Follow these steps in order to process the data from start to finish.
-
-### Step 1: Download the Raw Dataset
-
-First, run the `Dataset.py` script. This script connects to the Hugging Face Hub, downloads the `SetFit/20_newsgroups` dataset, and saves the training and testing splits into the `20_newsgroups_csv/` directory.
-
-**This step only needs to be run once.**
+## 1. 20 Newsgroups Dataset Processing
 
 ```bash
 python Dataset.py
