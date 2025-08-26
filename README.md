@@ -8,10 +8,7 @@ The complete project structure, after running all scripts, will look like this:
 
 ```
 .
-├── 20_newsgroups_csv/         # Directory for raw data downloaded from Hugging Face
-│   ├── train.csv
-│   └── test.csv
-├── 20_newsgroups_modified_csv/  # Directory for the final, processed data
+├── 20_newsgroups_csv/         # Directory for cleaned and processed data after downloaded from Hugging Face
 │   ├── train.csv
 │   └── test.csv
 ├── Dataset.py                 # Script 1: Downloads the raw data
